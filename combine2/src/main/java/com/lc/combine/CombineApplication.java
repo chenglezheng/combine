@@ -8,10 +8,10 @@ import org.springframework.context.ConfigurableApplicationContext;
 import static org.springframework.boot.SpringApplication.run;
 
 @SpringBootApplication
-public class ConbineApplication {
+public class CombineApplication {
 
 	public static void main(String[] args) {
-		ConfigurableApplicationContext context = SpringApplication.run(ConbineApplication.class, args);
+		ConfigurableApplicationContext context = SpringApplication.run(CombineApplication.class, args);
 		CombineExcelService combineExcelService= context.getBean(CombineExcelService.class);
 		try{
 			combineExcelService.combinne();

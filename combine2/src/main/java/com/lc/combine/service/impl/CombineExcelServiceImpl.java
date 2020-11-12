@@ -1,23 +1,19 @@
 package com.lc.combine.service.impl;
 
 import com.lc.combine.service.CombineExcelService;
-import com.lc.combine.util.DateUtils;
 import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.ss.util.RegionUtil;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -30,26 +26,27 @@ import java.util.List;
 @Service
 public class CombineExcelServiceImpl implements CombineExcelService {
 
+
     /**
      * 合并所有当前文件下含有“向阳奶站-客户报数”的文件
      * @throws Exception
      */
     @Override
     public void combinne() throws Exception{
-        /*String Path = new File("").getAbsolutePath();*/
-        String Path = "D:\\testcombine";
+        String Path = new File("").getAbsolutePath();
+        /*String Path = "D:\\testcombine";*/
         File file = new File(Path);
         File[] tempList = file.listFiles();
         List<String> fileName=new ArrayList<>();
-        String year="2020";
-        String month="01";
+        String year="";
+        String month="";
         String fileNamePri="";
         for (int i = 0; i < tempList.length; i++) {
             if (tempList[i].isFile() && tempList[i].toString().contains("商户报数")) {
                 String[] strings=tempList[i].toString().split("\\\\");
                 String tempFileNamePri=strings[strings.length-1];
                 fileName.add(tempFileNamePri);
-                if(i==tempList.length){
+                if(i==10){
                     String[] temp=tempFileNamePri.split("-");
                     fileNamePri=temp[0].substring(0,temp[0].length()-2);
                     year=temp[2];
@@ -62,23 +59,24 @@ public class CombineExcelServiceImpl implements CombineExcelService {
         int i=1;
         int fileSuccessCount=0;
         for (Object fromExcelName : fileName.toArray()) {
+            String fromExcelNamePath=Path+"\\"+fromExcelName.toString();
             try {
-                InputStream in = new FileInputStream(fromExcelName.toString());
+                InputStream in = new FileInputStream(fromExcelNamePath);
                 HSSFWorkbook fromExcel = new HSSFWorkbook(in);
                 int length = fromExcel.getNumberOfSheets();
                 if(length<=1){
                     HSSFSheet oldSheet = fromExcel.getSheetAt(0);
                     HSSFSheet newSheet = newExcel.createSheet(i+++"");
                     copySheet(newExcel, oldSheet, newSheet);
-                    System.out.println(fromExcelName.toString()+"已合并!");
+                    System.out.println(fromExcelNamePath+"已合并!");
                     fileSuccessCount++;
                 }else {
-                    System.out.println(fromExcelName.toString()+"文件中存在多个Sheet页，不符合合并规则!");
+                    System.out.println(fromExcelNamePath+"文件中存在多个Sheet页，不符合合并规则!");
                 }
             }catch (Exception e){
                 HSSFSheet newSheet = newExcel.createSheet(i+++"");
                 e.printStackTrace();
-                System.out.println(fromExcelName.toString()+"有未知错误，合并失败！");
+                System.out.println(fromExcelNamePath+"有未知错误，合并失败！");
             }
         }
         //定义新生成的xlx表格文件
@@ -150,6 +148,54 @@ public class CombineExcelServiceImpl implements CombineExcelService {
 
     }
 
+
+    /**
+     * 行复制功能
+     * @param wb
+     * @param oldRow
+     * @param toRow
+     */
+    public static void copySpecialRow(HSSFWorkbook wb, HSSFRow oldRow, HSSFRow toRow,HSSFCellStyle newStyle) {
+        toRow.setHeight(oldRow.getHeight());
+        for (int i = 0; i <22 ; i++) {
+            HSSFCell newCell = toRow.createCell(i);
+            newCell.setCellStyle(newStyle);
+        }
+        int j=2;
+        for (Iterator cellIt = oldRow.cellIterator(); cellIt.hasNext();) {
+            HSSFCell tmpCell = (HSSFCell) cellIt.next();
+            HSSFCell newCell = toRow.createCell(j);
+            copyCell(wb, tmpCell, newCell,newStyle);
+            j++;
+        }
+    }
+
+
+    /**
+     * 行复制功能
+     * @param wb
+     * @param oldRow
+     * @param toRow
+     */
+    public static void copySpecial1Row(HSSFWorkbook wb, HSSFRow oldRow, HSSFRow toRow,HSSFCellStyle newStyle) {
+        toRow.setHeight(oldRow.getHeight());
+        for (int i = 0; i <22 ; i++) {
+            HSSFCell newCell = toRow.createCell(i);
+            newCell.setCellStyle(newStyle);
+        }
+        int j=1;
+        for (Iterator cellIt = oldRow.cellIterator(); cellIt.hasNext();) {
+            if(j==1){
+                HSSFCell tmpCell = (HSSFCell) cellIt.next();
+            }else{
+                HSSFCell tmpCell = (HSSFCell) cellIt.next();
+                HSSFCell newCell = toRow.createCell(j);
+                copyCell(wb, tmpCell, newCell,newStyle);
+            }
+            j++;
+        }
+    }
+
     /**
      * 行复制功能
      * @param wb
@@ -158,59 +204,23 @@ public class CombineExcelServiceImpl implements CombineExcelService {
      */
     public static void copyRow(HSSFWorkbook wb, HSSFRow oldRow, HSSFRow toRow,HSSFCellStyle newStyle) {
         toRow.setHeight(oldRow.getHeight());
-        int i=0;
+        for (int i = 0; i <22 ; i++) {
+            HSSFCell newCell = toRow.createCell(i);
+            newCell.setCellStyle(newStyle);
+        }
+        int j=0;
         for (Iterator cellIt = oldRow.cellIterator(); cellIt.hasNext();) {
-            HSSFCell tmpCell = (HSSFCell) cellIt.next();
-            if(i==0){
-                HSSFCell newCell = toRow.createCell(i);
-                //处理第一列
-                updateDateFormat(tmpCell);
+            if(j==0){
+                HSSFCell tmpCell = (HSSFCell) cellIt.next();
+                j++;
+            }else{
+                HSSFCell tmpCell = (HSSFCell) cellIt.next();
+                HSSFCell newCell = toRow.createCell(j-1);
                 copyCell(wb, tmpCell, newCell,newStyle);
-                i++;
-            }else if(i==4){
-                i++;
-            }else {
-                if(i>4){
-                    int j=i;
-                    HSSFCell newCell = toRow.createCell(j-1);
-                    copyCell(wb, tmpCell, newCell,newStyle);
-                    i++;
-                }else {
-                    HSSFCell newCell = toRow.createCell(i);
-                    copyCell(wb, tmpCell, newCell,newStyle);
-                    i++;
-                }
+                j++;
             }
         }
     }
-
-    /**
-     * 处理日期转换(仅限处理第一行)
-     * @param fromCellType
-     */
-    private static void updateDateFormat(HSSFCell fromCell){
-        try{
-            int fromCellType = fromCell.getCellType();
-            if (fromCellType == HSSFCell.CELL_TYPE_NUMERIC) {
-                Double numericCellValue = fromCell.getNumericCellValue();
-                fromCell.setCellValue(DateUtils.handleDate(numericCellValue.longValue()));
-            } else if (fromCellType == HSSFCell.CELL_TYPE_STRING) {
-                fromCell.setCellValue(fromCell.getRichStringCellValue());
-            } else if (fromCellType == HSSFCell.CELL_TYPE_BLANK) {
-                // nothing21
-            } else if (fromCellType == HSSFCell.CELL_TYPE_BOOLEAN) {
-                fromCell.setCellValue(fromCell.getBooleanCellValue());
-            } else if (fromCellType == HSSFCell.CELL_TYPE_ERROR) {
-                fromCell.setCellErrorValue(fromCell.getErrorCellValue());
-            } else if (fromCellType == HSSFCell.CELL_TYPE_FORMULA) {
-                fromCell.setCellFormula(fromCell.getCellFormula());
-            }
-        }catch(Exception e){
-            System.out.println("第一列日期处理错误！");
-            e.printStackTrace();
-        }
-    }
-
 
 
     /**
@@ -223,26 +233,47 @@ public class CombineExcelServiceImpl implements CombineExcelService {
         mergeSheetAllRegion(fromSheet, toSheet);
         HSSFCellStyle newStyle = wb.createCellStyle();
         setNewCellStyle(newStyle,wb);
-        // 设置列宽
         int length = 200;
         for (int i = 0; i <= length; i++) {
-            toSheet.setColumnWidth(i, fromSheet.getColumnWidth(i));
+            toSheet.setColumnWidth(i, 3800);
         }
         int i=0;
+        HSSFRow tempRow = null;
         for (Iterator rowIt = fromSheet.rowIterator(); rowIt.hasNext();) {
             if(i==0){
-                HSSFRow newRow = toSheet.createRow(0);
-                HSSFCell newCell = newRow.createCell(i);
-                newCell.setCellStyle(newStyle);
-                newCell.setCellValue("向阳奶站站正常报数单");
-                i++;
-            }else {
                 HSSFRow oldRow = (HSSFRow) rowIt.next();
-                HSSFRow newRow = toSheet.createRow(oldRow.getRowNum());
+                HSSFRow newRow = toSheet.createRow(i);
+                /*for (int k = 0; k <23 ; k++) {
+                    HSSFCell newCell = newRow.createCell(k);
+                    newCell.setCellStyle(newStyle);
+                }*/
+                i++;
+            }if(i==1 || i==2){
+                HSSFRow oldRow = (HSSFRow) rowIt.next();
+                HSSFRow newRow = toSheet.createRow(i);
+                copySpecialRow(wb, oldRow, newRow,newStyle);
+                i++;
+            }else{
+                HSSFRow oldRow = (HSSFRow) rowIt.next();
+                tempRow=oldRow;
+                HSSFRow newRow = toSheet.createRow(i);
                 copyRow(wb, oldRow, newRow,newStyle);
+                i++;
             }
         }
-        toSheet.addMergedRegion(new CellRangeAddress(0,0,0,8));
+        //复写最后一行
+        HSSFRow newRow = toSheet.createRow(i-1);
+        copySpecial1Row(wb, tempRow, newRow,newStyle);
+        newRow = toSheet.createRow(i);
+        for (int k = 0; k <22 ; k++) {
+            HSSFCell newCell = newRow.createCell(k);
+            newCell.setCellStyle(newStyle);
+            if (k==0){
+                newCell.setCellValue("签字");
+            }
+        }
+        toSheet.addMergedRegion(new CellRangeAddress(1,2,0,1));
+        toSheet.addMergedRegion(new CellRangeAddress(i,i,0,1));
     }
 
     public class HSSFDateUtil extends DateUtil {
