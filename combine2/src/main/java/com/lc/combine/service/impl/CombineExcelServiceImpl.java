@@ -46,12 +46,10 @@ public class CombineExcelServiceImpl implements CombineExcelService {
                 String[] strings=tempList[i].toString().split("\\\\");
                 String tempFileNamePri=strings[strings.length-1];
                 fileName.add(tempFileNamePri);
-                if(i==10){
-                    String[] temp=tempFileNamePri.split("-");
-                    fileNamePri=temp[0].substring(0,temp[0].length()-2);
-                    year=temp[2];
-                    month=temp[3];
-                }
+                String[] temp=tempFileNamePri.split("-");
+                fileNamePri=temp[0].substring(0,temp[0].length()-2);
+                year=temp[2]+".";
+                month=temp[3];
             }
         }
         System.out.println("当前目录下有"+fileName.size()+"个文件需要合并!");
@@ -80,13 +78,13 @@ public class CombineExcelServiceImpl implements CombineExcelService {
             }
         }
         //定义新生成的xlx表格文件
-        String allFileName = Path+ "\\"+year+"."+month+fileNamePri+"每日线下签收单.xls";
+        String allFileName = Path+ "\\"+year+month+fileNamePri+"每日线下签收单.xls";
         FileOutputStream fileOut = new FileOutputStream(allFileName);
         newExcel.write(fileOut);
         fileOut.flush();
         fileOut.close();
         System.out.println("合并成功文件数："+fileSuccessCount+"\t 失败文件数："+(fileName.size()-fileSuccessCount));
-        System.out.println("合并文件名称为:"+year+"."+month+fileNamePri+"每日线下签收单.xls"+"\t 目录为:"+Path);
+        System.out.println("合并文件名称为:"+year+month+fileNamePri+"每日线下签收单.xls"+"\t 目录为:"+Path);
     }
 
     public static void setNewCellStyle(HSSFCellStyle newStyle,HSSFWorkbook wb) {
@@ -157,11 +155,32 @@ public class CombineExcelServiceImpl implements CombineExcelService {
      */
     public static void copySpecialRow(HSSFWorkbook wb, HSSFRow oldRow, HSSFRow toRow,HSSFCellStyle newStyle) {
         toRow.setHeight(oldRow.getHeight());
-        for (int i = 0; i <22 ; i++) {
+        for (int i = 0; i <oldRow.getPhysicalNumberOfCells();i++) {
             HSSFCell newCell = toRow.createCell(i);
             newCell.setCellStyle(newStyle);
         }
         int j=2;
+        for (Iterator cellIt = oldRow.cellIterator(); cellIt.hasNext();) {
+            HSSFCell tmpCell = (HSSFCell) cellIt.next();
+            HSSFCell newCell = toRow.createCell(j);
+            copyCell(wb, tmpCell, newCell,newStyle);
+            j++;
+        }
+    }
+
+    /**
+     * 行复制功能
+     * @param wb
+     * @param oldRow
+     * @param toRow
+     */
+    public static void copySpecialRow1(HSSFWorkbook wb, HSSFRow oldRow, HSSFRow toRow,HSSFCellStyle newStyle) {
+        toRow.setHeight(oldRow.getHeight());
+        for (int i = 0; i <oldRow.getPhysicalNumberOfCells() ; i++) {
+            HSSFCell newCell = toRow.createCell(i);
+            newCell.setCellStyle(newStyle);
+        }
+        int j=0;
         for (Iterator cellIt = oldRow.cellIterator(); cellIt.hasNext();) {
             HSSFCell tmpCell = (HSSFCell) cellIt.next();
             HSSFCell newCell = toRow.createCell(j);
@@ -179,7 +198,7 @@ public class CombineExcelServiceImpl implements CombineExcelService {
      */
     public static void copySpecial1Row(HSSFWorkbook wb, HSSFRow oldRow, HSSFRow toRow,HSSFCellStyle newStyle) {
         toRow.setHeight(oldRow.getHeight());
-        for (int i = 0; i <22 ; i++) {
+        for (int i = 0; i <oldRow.getPhysicalNumberOfCells() ; i++) {
             HSSFCell newCell = toRow.createCell(i);
             newCell.setCellStyle(newStyle);
         }
@@ -204,7 +223,7 @@ public class CombineExcelServiceImpl implements CombineExcelService {
      */
     public static void copyRow(HSSFWorkbook wb, HSSFRow oldRow, HSSFRow toRow,HSSFCellStyle newStyle) {
         toRow.setHeight(oldRow.getHeight());
-        for (int i = 0; i <22 ; i++) {
+        for (int i = 0; i <oldRow.getPhysicalNumberOfCells() ; i++) {
             HSSFCell newCell = toRow.createCell(i);
             newCell.setCellStyle(newStyle);
         }
@@ -253,6 +272,16 @@ public class CombineExcelServiceImpl implements CombineExcelService {
                 HSSFRow newRow = toSheet.createRow(i);
                 copySpecialRow(wb, oldRow, newRow,newStyle);
                 i++;
+            }if(i==3){
+                HSSFRow oldRow = (HSSFRow) rowIt.next();
+                tempRow=oldRow;
+                HSSFRow newRow = toSheet.createRow(i);
+                if(oldRow.getPhysicalNumberOfCells()==36){
+                    copySpecialRow1(wb, oldRow, newRow,newStyle);
+                }else {
+                    copyRow(wb, oldRow, newRow,newStyle);
+                }
+                i++;
             }else{
                 HSSFRow oldRow = (HSSFRow) rowIt.next();
                 tempRow=oldRow;
@@ -265,7 +294,7 @@ public class CombineExcelServiceImpl implements CombineExcelService {
         HSSFRow newRow = toSheet.createRow(i-1);
         copySpecial1Row(wb, tempRow, newRow,newStyle);
         newRow = toSheet.createRow(i);
-        for (int k = 0; k <22 ; k++) {
+        for (int k = 0; k <tempRow.getPhysicalNumberOfCells() ; k++) {
             HSSFCell newCell = newRow.createCell(k);
             newCell.setCellStyle(newStyle);
             if (k==0){
